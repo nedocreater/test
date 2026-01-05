@@ -545,17 +545,22 @@ async def create_forum_topic_for_user(user_id: int, user_name: str, thread_id: i
             topic = None
         
         # Формируем приветственное сообщение с номером обращения
+        # Экранируем специальные символы для Markdown
+        user_name_safe = user_name.replace('_', '\\_').replace('*', '\\*').replace('`', '\\`').replace('[', '\\[')
+        
         welcome_text = f"🎨 *Новый заказ #{thread_id} от клиента*\n\n"
-        welcome_text += f"*Пользователь:* {user_name}\n"
+        welcome_text += f"*Пользователь:* {user_name_safe}\n"
         welcome_text += f"*ID:* {user_id}\n"
         
         if selected_service:
-            welcome_text += f"*Услуга:* {selected_service}\n"
+            # Экранируем услугу тоже
+            service_safe = selected_service.replace('_', '\\_').replace('*', '\\*').replace('`', '\\`').replace('[', '\\[')
+            welcome_text += f"*Услуга:* {service_safe}\n"
         
         welcome_text += f"*Время:* {datetime.now().strftime('%H:%M %d.%m.%Y')}\n\n"
         
         if selected_service:
-            welcome_text += f"📋 *Ожидание описания задачи по услуге: {selected_service}...*"
+            welcome_text += f"📋 *Ожидание описания задачи по услуге:* {service_safe if selected_service else 'не указана'}..."
         else:
             welcome_text += "📋 *Ожидание описания задачи от клиента...*"
         
@@ -727,7 +732,9 @@ async def handle_user_message(update: Update, context: ContextTypes.DEFAULT_TYPE
         # Если услуга выбрана и это первое сообщение, добавляем информацию об услуге
         message_prefix = ""
         if selected_service and not first_message_sent and thread:
-            message_prefix = f"🎨 *Услуга:* {selected_service}\n\n"
+            # Экранируем услугу для Markdown
+            service_safe = selected_service.replace('_', '\\_').replace('*', '\\*').replace('`', '\\`').replace('[', '\\[')
+            message_prefix = f"🎨 *Услуга:* {service_safe}\n\n"
             # Отмечаем, что первое сообщение с услугой отправлено
             Database.mark_first_message_sent(thread_id)
         
@@ -743,10 +750,12 @@ async def handle_user_message(update: Update, context: ContextTypes.DEFAULT_TYPE
         
         if message.text:
             try:
+                # Экранируем текст пользователя для Markdown
+                text_safe = message.text.replace('_', '\\_').replace('*', '\\*').replace('`', '\\`').replace('[', '\\[')
                 group_reply = await context.bot.send_message(
                     chat_id=GROUP_CHAT_ID,
                     message_thread_id=thread['forum_topic_id'],
-                    text=f"{message_prefix}💬 *Сообщение от клиента:*\n\n{message.text}",
+                    text=f"{message_prefix}💬 *Сообщение от клиента:*\n\n{text_safe}",
                     parse_mode='Markdown'
                 )
             except Exception as e:
@@ -785,7 +794,7 @@ async def handle_user_message(update: Update, context: ContextTypes.DEFAULT_TYPE
                     group_reply = await context.bot.send_message(
                         chat_id=GROUP_CHAT_ID,
                         message_thread_id=new_forum_topic_id,
-                        text=f"{message_prefix}💬 *Сообщение от клиента (тред пересоздан):*\n\n{message.text}",
+                        text=f"{message_prefix}💬 *Сообщение от клиента (тред пересоздан):*\n\n{text_safe}",
                         parse_mode='Markdown'
                     )
                     
@@ -805,11 +814,13 @@ async def handle_user_message(update: Update, context: ContextTypes.DEFAULT_TYPE
             caption = message.caption or "Фото от клиента"
             
             try:
+                # Экранируем подпись для Markdown
+                caption_safe = caption.replace('_', '\\_').replace('*', '\\*').replace('`', '\\`').replace('[', '\\[')
                 group_reply = await context.bot.send_photo(
                     chat_id=GROUP_CHAT_ID,
                     message_thread_id=thread['forum_topic_id'],
                     photo=photo.file_id,
-                    caption=f"{message_prefix}📸 *Фото от клиента:*\n\n{caption}",
+                    caption=f"{message_prefix}📸 *Фото от клиента:*\n\n{caption_safe}",
                     parse_mode='Markdown'
                 )
             except Exception as e:
@@ -849,7 +860,7 @@ async def handle_user_message(update: Update, context: ContextTypes.DEFAULT_TYPE
                         chat_id=GROUP_CHAT_ID,
                         message_thread_id=new_forum_topic_id,
                         photo=photo.file_id,
-                        caption=f"{message_prefix}📸 *Фото от клиента (тред пересоздан):*\n\n{caption}",
+                        caption=f"{message_prefix}📸 *Фото от клиента (тред пересоздан):*\n\n{caption_safe}",
                         parse_mode='Markdown'
                     )
                     
@@ -866,11 +877,14 @@ async def handle_user_message(update: Update, context: ContextTypes.DEFAULT_TYPE
             
         elif message.document:
             try:
+                # Экранируем подпись для Markdown
+                caption = message.caption or 'Документ'
+                caption_safe = caption.replace('_', '\\_').replace('*', '\\*').replace('`', '\\`').replace('[', '\\[')
                 group_reply = await context.bot.send_document(
                     chat_id=GROUP_CHAT_ID,
                     message_thread_id=thread['forum_topic_id'],
                     document=message.document.file_id,
-                    caption=f"{message_prefix}📎 *Документ от клиента:*\n\n{message.caption or 'Документ'}",
+                    caption=f"{message_prefix}📎 *Документ от клиента:*\n\n{caption_safe}",
                     parse_mode='Markdown'
                 )
             except Exception as e:
@@ -910,7 +924,7 @@ async def handle_user_message(update: Update, context: ContextTypes.DEFAULT_TYPE
                         chat_id=GROUP_CHAT_ID,
                         message_thread_id=new_forum_topic_id,
                         document=message.document.file_id,
-                        caption=f"{message_prefix}📎 *Документ от клиента (тред пересоздан):*\n\n{message.caption or 'Документ'}",
+                        caption=f"{message_prefix}📎 *Документ от клиента (тред пересоздан):*\n\n{caption_safe}",
                         parse_mode='Markdown'
                     )
                     
@@ -927,11 +941,14 @@ async def handle_user_message(update: Update, context: ContextTypes.DEFAULT_TYPE
             
         elif message.video:
             try:
+                # Экранируем подпись для Markdown
+                caption = message.caption or 'Видео'
+                caption_safe = caption.replace('_', '\\_').replace('*', '\\*').replace('`', '\\`').replace('[', '\\[')
                 group_reply = await context.bot.send_video(
                     chat_id=GROUP_CHAT_ID,
                     message_thread_id=thread['forum_topic_id'],
                     video=message.video.file_id,
-                    caption=f"{message_prefix}🎥 *Видео от клиента:*\n\n{message.caption or 'Видео'}",
+                    caption=f"{message_prefix}🎥 *Видео от клиента:*\n\n{caption_safe}",
                     parse_mode='Markdown'
                 )
             except Exception as e:
@@ -971,7 +988,7 @@ async def handle_user_message(update: Update, context: ContextTypes.DEFAULT_TYPE
                         chat_id=GROUP_CHAT_ID,
                         message_thread_id=new_forum_topic_id,
                         video=message.video.file_id,
-                        caption=f"{message_prefix}🎥 *Видео от клиента (тред пересоздан):*\n\n{message.caption or 'Видео'}",
+                        caption=f"{message_prefix}🎥 *Видео от клиента (тред пересоздан):*\n\n{caption_safe}",
                         parse_mode='Markdown'
                     )
                     
@@ -988,11 +1005,14 @@ async def handle_user_message(update: Update, context: ContextTypes.DEFAULT_TYPE
             
         elif message.audio:
             try:
+                # Экранируем подпись для Markdown
+                caption = message.caption or 'Аудио'
+                caption_safe = caption.replace('_', '\\_').replace('*', '\\*').replace('`', '\\`').replace('[', '\\[')
                 group_reply = await context.bot.send_audio(
                     chat_id=GROUP_CHAT_ID,
                     message_thread_id=thread['forum_topic_id'],
                     audio=message.audio.file_id,
-                    caption=f"{message_prefix}🎵 *Аудио от клиента:*\n\n{message.caption or 'Аудио'}",
+                    caption=f"{message_prefix}🎵 *Аудио от клиента:*\n\n{caption_safe}",
                     parse_mode='Markdown'
                 )
             except Exception as e:
@@ -1032,7 +1052,7 @@ async def handle_user_message(update: Update, context: ContextTypes.DEFAULT_TYPE
                         chat_id=GROUP_CHAT_ID,
                         message_thread_id=new_forum_topic_id,
                         audio=message.audio.file_id,
-                        caption=f"{message_prefix}🎵 *Аудио от клиента (тред пересоздан):*\n\n{message.caption or 'Аудио'}",
+                        caption=f"{message_prefix}🎵 *Аудио от клиента (тред пересоздан):*\n\n{caption_safe}",
                         parse_mode='Markdown'
                     )
                     
@@ -1183,12 +1203,16 @@ async def handle_group_message(update: Update, context: ContextTypes.DEFAULT_TYP
             
             # Если это первое сообщение от администратора в этом треде
             if admin_message_count == 0:
-                message_prefix = f"🎨 *Услуга:* {selected_service}\n\n"
+                # Экранируем услугу для Markdown
+                service_safe = selected_service.replace('_', '\\_').replace('*', '\\*').replace('`', '\\`').replace('[', '\\[')
+                message_prefix = f"🎨 *Услуга:* {service_safe}\n\n"
         
         if message.text:
+            # Экранируем текст администратора для Markdown
+            text_safe = message.text.replace('_', '\\_').replace('*', '\\*').replace('`', '\\`').replace('[', '\\[')
             await context.bot.send_message(
                 chat_id=client_user_id,
-                text=f"{message_prefix}👨‍💼 *Ответ от администратора:*\n\n{message.text}",
+                text=f"{message_prefix}👨‍💼 *Ответ от администратора:*\n\n{text_safe}",
                 parse_mode='Markdown'
             )
             message_type = 'text'
@@ -1198,10 +1222,12 @@ async def handle_group_message(update: Update, context: ContextTypes.DEFAULT_TYP
         elif message.photo:
             photo = message.photo[-1]
             caption = message.caption or "Ответ от администратора"
+            # Экранируем подпись для Markdown
+            caption_safe = caption.replace('_', '\\_').replace('*', '\\*').replace('`', '\\`').replace('[', '\\[')
             await context.bot.send_photo(
                 chat_id=client_user_id,
                 photo=photo.file_id,
-                caption=f"{message_prefix}👨‍💼 *Ответ от администратора:*\n\n{caption}",
+                caption=f"{message_prefix}👨‍💼 *Ответ от администратора:*\n\n{caption_safe}",
                 parse_mode='Markdown'
             )
             message_type = 'photo'
@@ -1209,10 +1235,13 @@ async def handle_group_message(update: Update, context: ContextTypes.DEFAULT_TYP
             file_id = photo.file_id
             
         elif message.document:
+            caption = message.caption or 'Документ'
+            # Экранируем подпись для Markdown
+            caption_safe = caption.replace('_', '\\_').replace('*', '\\*').replace('`', '\\`').replace('[', '\\[')
             await context.bot.send_document(
                 chat_id=client_user_id,
                 document=message.document.file_id,
-                caption=f"{message_prefix}👨‍💼 *Ответ от администратора:*\n\n{message.caption or 'Документ'}",
+                caption=f"{message_prefix}👨‍💼 *Ответ от администратора:*\n\n{caption_safe}",
                 parse_mode='Markdown'
             )
             message_type = 'document'
@@ -1220,10 +1249,13 @@ async def handle_group_message(update: Update, context: ContextTypes.DEFAULT_TYP
             file_id = message.document.file_id
             
         elif message.video:
+            caption = message.caption or 'Видео'
+            # Экранируем подпись для Markdown
+            caption_safe = caption.replace('_', '\\_').replace('*', '\\*').replace('`', '\\`').replace('[', '\\[')
             await context.bot.send_video(
                 chat_id=client_user_id,
                 video=message.video.file_id,
-                caption=f"{message_prefix}👨‍💼 *Ответ от администратора:*\n\n{message.caption or 'Видео'}",
+                caption=f"{message_prefix}👨‍💼 *Ответ от администратора:*\n\n{caption_safe}",
                 parse_mode='Markdown'
             )
             message_type = 'video'
@@ -1231,10 +1263,13 @@ async def handle_group_message(update: Update, context: ContextTypes.DEFAULT_TYP
             file_id = message.video.file_id
             
         elif message.audio:
+            caption = message.caption or 'Аудио'
+            # Экранируем подпись для Markdown
+            caption_safe = caption.replace('_', '\\_').replace('*', '\\*').replace('`', '\\`').replace('[', '\\[')
             await context.bot.send_audio(
                 chat_id=client_user_id,
                 audio=message.audio.file_id,
-                caption=f"{message_prefix}👨‍💼 *Ответ от администратора:*\n\n{message.caption or 'Аудио'}",
+                caption=f"{message_prefix}👨‍💼 *Ответ от администратора:*\n\n{caption_safe}",
                 parse_mode='Markdown'
             )
             message_type = 'audio'
@@ -1258,9 +1293,13 @@ async def handle_group_message(update: Update, context: ContextTypes.DEFAULT_TYP
             file_id=file_id
         )
         
-        # Отправляем подтверждение
+        # Отправляем подтверждение без параметра quote
         try:
-            confirmation = await message.reply_text("✅ Ответ отправлен клиенту", quote=False)
+            confirmation = await context.bot.send_message(
+                chat_id=GROUP_CHAT_ID,
+                message_thread_id=message.message_thread_id,
+                text="✅ Ответ отправлен клиенту"
+            )
             await asyncio.sleep(5)
             await confirmation.delete()
         except Exception as e:
@@ -1269,9 +1308,13 @@ async def handle_group_message(update: Update, context: ContextTypes.DEFAULT_TYP
     except Exception as e:
         logger.error(f"Ошибка при отправке ответа клиенту: {e}")
         try:
-            await message.reply_text(f"❌ Ошибка: {str(e)[:100]}", quote=False)
-        except:
-            pass
+            await context.bot.send_message(
+                chat_id=GROUP_CHAT_ID,
+                message_thread_id=message.message_thread_id,
+                text=f"❌ Ошибка: {str(e)[:100]}"
+            )
+        except Exception as e2:
+            logger.error(f"Не удалось отправить сообщение об ошибке: {e2}")
 
 # Обработка нажатий на кнопки
 async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
