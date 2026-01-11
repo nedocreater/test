@@ -1,5 +1,3 @@
-[file name]: bot.py
-[file content begin]
 import logging
 import sqlite3
 import os
@@ -180,7 +178,7 @@ class Database:
 		conn = Database.get_connection()
 		cursor = conn.cursor()
 		cursor.execute('''
-			INSERT INTO messages (thread_id, user_id, direction, message_text,
+			INSERT INTO messages (thread_id, user_id, direction, message_text, 
 								message_type, group_message_id, user_message_id, file_id)
 			VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 		''', (thread_id, user_id, direction, message_text, message_type, 
