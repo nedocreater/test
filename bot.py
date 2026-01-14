@@ -12,7 +12,7 @@ from telegram.ext import (
 )
 
 # Настройки бота
-BOT_TOKEN = "8300826706:AAFP-XNXKqp0GakXT9dumggmTrXh5wNwI1Y"
+
 GROUP_CHAT_ID = -1003588770543
 ADMIN_IDS = [884316429]
 BOT_USERNAME = "studio79_bot"
