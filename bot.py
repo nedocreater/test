@@ -3,9 +3,7 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.filters import CommandStart
 
 # Токен вашего бота
-BOT_TOKEN = "7971728560:AAFTv0qYcv8YyaM-rVUcvr7DoThEkvS5LTo"
-# Ваш ID или username для пересылки сообщений
-ADMIN_ID = 884316429  # Можно использовать и username: "goncharovs7"
+ # Можно использовать и username: "goncharovs7"
 
 # Инициализация бота и диспетчера
 bot = Bot(token=BOT_TOKEN)
